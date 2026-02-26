@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Predictor — Daily Picks Dashboard</title>
+    <style>
+        :root { --bg: #0a0f1a; --surface: #111827; --surface2: #1f2937;
+                --primary: #3b82f6; --success: #10b981; --danger: #ef4444;
+                --warning: #f59e0b; --text: #f1f5f9; --muted: #6b7280; --border: #374151; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+               background: var(--bg); color: var(--text); }
+
+        .nav { background: var(--surface); border-bottom: 1px solid var(--border);
+               padding: 0 24px; display: flex; align-items: center; height: 52px; }
+        .nav .logo { font-size: 18px; font-weight: 800; }
+        .nav .logo span { color: var(--primary); }
+        .nav .stats { margin-left: auto; display: flex; gap: 20px; font-size: 13px; color: var(--muted); }
+        .nav .stats strong { color: var(--text); }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+        /* Header stats */
+        .header-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
+        .hstat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+                 padding: 16px; text-align: center; }
+        .hstat .label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+                       letter-spacing: 0.5px; margin-bottom: 4px; }
+        .hstat .value { font-size: 24px; font-weight: 800; }
+        .hstat .value.green { color: var(--success); }
+        .hstat .value.red { color: var(--danger); }
+        .hstat .value.blue { color: var(--primary); }
+
+        /* Pick cards */
+        .picks-grid { display: flex; flex-direction: column; gap: 16px; }
+        .pick-card { background: var(--surface); border: 1px solid var(--border);
+                    border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+        .pick-card:hover { border-color: var(--primary); }
+        .pick-card.high { border-left: 4px solid var(--danger); }
+        .pick-card.medium { border-left: 4px solid var(--success); }
+        .pick-card.low { border-left: 4px solid var(--muted); }
+
+        .pick-header { display: flex; justify-content: space-between; align-items: center;
+                      padding: 16px 20px; background: var(--surface2); }
+        .pick-matchup { display: flex; align-items: center; gap: 12px; }
+        .pick-teams { font-size: 16px; font-weight: 700; }
+        .pick-time { font-size: 12px; color: var(--muted); }
+        .pick-conf { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+        .pick-conf.high { background: rgba(239,68,68,0.2); color: #fca5a5; }
+        .pick-conf.medium { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+        .pick-conf.low { background: rgba(107,114,128,0.2); color: #d1d5db; }
+
+        .pick-body { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .pick-detail { }
+        .pick-detail .label { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+        .pick-detail .value { font-size: 15px; font-weight: 600; }
+        .pick-detail .value.pick { color: var(--primary); font-size: 18px; }
+
+        .pick-edge { display: flex; gap: 24px; }
+        .edge-item { text-align: center; }
+        .edge-item .num { font-size: 20px; font-weight: 800; }
+        .edge-item .num.positive { color: var(--success); }
+        .edge-item .label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+
+        .pick-reasoning { padding: 12px 20px; border-top: 1px solid var(--border);
+                         font-size: 13px; color: var(--muted); line-height: 1.5; }
+        .pick-reasoning strong { color: var(--text); }
+
+        .pick-meta { padding: 8px 20px; border-top: 1px solid var(--border);
+                    display: flex; gap: 16px; font-size: 11px; color: var(--muted); }
+        .pick-meta .tag { background: var(--surface2); padding: 2px 8px; border-radius: 3px; }
+
+        /* Edge meter */
+        .edge-meter { width: 100%; height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 6px; }
+        .edge-fill { height: 100%; border-radius: 3px; }
+        .edge-fill.great { background: var(--success); }
+        .edge-fill.good { background: var(--primary); }
+        .edge-fill.marginal { background: var(--warning); }
+
+        /* Live games */
+        .live-section { margin-top: 32px; }
+        .live-section h2 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .live-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%;
+                   animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .live-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+        .live-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+        .live-score { font-size: 20px; font-weight: 800; display: flex; justify-content: space-between; }
+        .live-inning { font-size: 12px; color: var(--warning); text-align: center; }
+        .live-wp { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; }
+        .wp-bar { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 4px; }
+        .wp-fill { height: 100%; background: var(--primary); border-radius: 2px; transition: width 0.5s; }
+
+        @media (max-width: 768px) {
+            .header-stats { grid-template-columns: repeat(3, 1fr); }
+            .pick-body { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="logo">⚾ MLB <span>Predictor</span></div>
+        <div class="stats">
+            <span>Record: <strong id="record">42-28</strong></span>
+            <span>ROI: <strong id="roi" style="color:var(--success)">+11.8%</strong></span>
+            <span>Streak: <strong id="streak" style="color:var(--success)">W4</strong></span>
+            <span>Model: <strong>v5.0</strong></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header-stats">
+            <div class="hstat"><div class="label">Today's Picks</div><div class="value blue">4</div></div>
+            <div class="hstat"><div class="label">High Confidence</div><div class="value red">3</div></div>
+            <div class="hstat"><div class="label">Avg Edge</div><div class="value green">5.6%</div></div>
+            <div class="hstat"><div class="label">Units Risked</div><div class="value">9.0u</div></div>
+            <div class="hstat"><div class="label">Yesterday</div><div class="value green">+3.2u</div></div>
+            <div class="hstat"><div class="label">MTD P&L</div><div class="value green">+14.2u</div></div>
+        </div>
+
+        <div class="picks-grid" id="picksContainer">
+            <!-- Pick 1: HIGH CONFIDENCE -->
+            <div class="pick-card high">
+                <div class="pick-header">
+                    <div class="pick-matchup">
+                        <div>
+                            <div class="pick-teams">LAD @ SF</div>
+                            <div class="pick-time">9:45 PM ET • Oracle Park</div>
+                        </div>
+                    </div>
+                    <span class="pick-conf high">🔥 HIGH • 2.5u</span>
+                </div>
+                <div class="pick-body">
+                    <div class="pick-detail">
+                        <div class="label">Pick</div>
+                        <div class="value pick">LAD ML (-165)</div>
+                    </div>
+                    <div class="pick-detail">
+                        <div class="label">Pitchers</div>
+                        <div class="value">Yamamoto vs Webb</div>
+                    </div>
+                    <div class="pick-edge">
+                        <div class="edge-item">
+                            <div class="num positive">68.0%</div>
+                            <div class="label">Model Win %</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num">62.3%</div>
+                            <div class="label">Implied</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num positive">+5.7%</div>
+                            <div class="label">Edge</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pick-reasoning">
+                    <strong>💡 Why:</strong> Ohtani splits vs RHP (.340/.400/.680). Giants pen 5.12 ERA last 7 days. Dodgers 8-2 L10 on road.
+                </div>
+                <div class="pick-meta">
+                    <span class="tag">🌤️ 68°F, Clear</span>
+                    <span class="tag">💨 Wind from LF</span>
+                    <span class="tag">Kelly: 6.2%</span>
+                </div>
+            </div>
+
+            <!-- Pick 2: HIGH CONFIDENCE -->
+            <div class="pick-card high">
+                <div class="pick-header">
+                    <div class="pick-matchup">
+                        <div>
+                            <div class="pick-teams">HOU @ TEX</div>
+                            <div class="pick-time">8:05 PM ET • Globe Life Field</div>
+                        </div>
+                    </div>
+                    <span class="pick-conf high">🔥 HIGH • 3.0u</span>
+                </div>
+                <div class="pick-body">
+                    <div class="pick-detail">
+                        <div class="label">Pick</div>
+                        <div class="value pick">OVER 8.5 (-105)</div>
+                    </div>
+                    <div class="pick-detail">
+                        <div class="label">Pitchers</div>
+                        <div class="value">Valdez vs Eovaldi</div>
+                    </div>
+                    <div class="pick-edge">
+                        <div class="edge-item">
+                            <div class="num positive">59.0%</div>
+                            <div class="label">Model Over %</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num">51.2%</div>
+                            <div class="label">Implied</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num positive">+7.8%</div>
+                            <div class="label">Edge</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pick-reasoning">
+                    <strong>💡 Why:</strong> Both pens depleted. Wind 15mph out to RF. 12-3 Over in last 15 meetings at Globe Life. Roof OPEN.
+                    <br><strong>🏥 Injury:</strong> TEX: Corey Seager DTD (hamstring), may sit — reduces TEX offense but already priced in.
+                </div>
+                <div class="pick-meta">
+                    <span class="tag">🌡️ 95°F</span>
+                    <span class="tag">💨 15mph out to RF</span>
+                    <span class="tag">🏟️ Roof OPEN</span>
+                    <span class="tag">Kelly: 7.2%</span>
+                </div>
+            </div>
+
+            <!-- Pick 3: HIGH CONFIDENCE -->
+            <div class="pick-card high">
+                <div class="pick-header">
+                    <div class="pick-matchup">
+                        <div>
+                            <div class="pick-teams">ATL @ PHI</div>
+                            <div class="pick-time">7:05 PM ET • Citizens Bank Park</div>
+                        </div>
+                    </div>
+                    <span class="pick-conf high">🔥 HIGH • 2.0u</span>
+                </div>
+                <div class="pick-body">
+                    <div class="pick-detail">
+                        <div class="label">Pick</div>
+                        <div class="value pick">PHI F5 -0.5 (-120)</div>
+                    </div>
+                    <div class="pick-detail">
+                        <div class="label">Pitchers</div>
+                        <div class="value">Fried vs Wheeler</div>
+                    </div>
+                    <div class="pick-edge">
+                        <div class="edge-item">
+                            <div class="num positive">61.0%</div>
+                            <div class="label">Model F5 %</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num">54.5%</div>
+                            <div class="label">Implied</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num positive">+6.5%</div>
+                            <div class="label">Edge</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pick-reasoning">
+                    <strong>💡 Why:</strong> Wheeler dominates ATL (1.89 ERA in 8 starts at CBP). F5 avoids ATL's elite late pen. PHI .302 BA first 5 innings at home.
+                </div>
+                <div class="pick-meta">
+                    <span class="tag">🌤️ 78°F, Clear</span>
+                    <span class="tag">Kelly: 5.8%</span>
+                </div>
+            </div>
+
+            <!-- Pick 4: MEDIUM CONFIDENCE -->
+            <div class="pick-card medium">
+                <div class="pick-header">
+                    <div class="pick-matchup">
+                        <div>
+                            <div class="pick-teams">NYY @ BOS</div>
+                            <div class="pick-time">7:10 PM ET • Fenway Park</div>
+                        </div>
+                    </div>
+                    <span class="pick-conf medium">✅ MEDIUM • 1.5u</span>
+                </div>
+                <div class="pick-body">
+                    <div class="pick-detail">
+                        <div class="label">Pick</div>
+                        <div class="value pick">NYY ML (-125)</div>
+                    </div>
+                    <div class="pick-detail">
+                        <div class="label">Pitchers</div>
+                        <div class="value">Cole vs Bello</div>
+                    </div>
+                    <div class="pick-edge">
+                        <div class="edge-item">
+                            <div class="num positive">58.0%</div>
+                            <div class="label">Model Win %</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num">55.6%</div>
+                            <div class="label">Implied</div>
+                        </div>
+                        <div class="edge-item">
+                            <div class="num positive">+2.4%</div>
+                            <div class="label">Edge</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pick-reasoning">
+                    <strong>💡 Why:</strong> Yankees bats hot vs LHP (14d: .289/.358/.492). Cole elite at Fenway (2.45 ERA L6 starts). Smaller edge but Cole factor.
+                </div>
+                <div class="pick-meta">
+                    <span class="tag">🌤️ 72°F</span>
+                    <span class="tag">💨 8mph out to CF</span>
+                    <span class="tag">Kelly: 3.5%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Games -->
+        <div class="live-section">
+            <h2><span class="live-dot"></span> Live Games</h2>
+            <div class="live-games">
+                <div class="live-card">
+                    <div class="live-score">
+                        <span>NYM <strong>4</strong></span>
+                        <span><strong>3</strong> MIA</span>
+                    </div>
+                    <div class="live-inning">Bot 7 • 1 Out • Runners on 1B, 3B</div>
+                    <div class="live-wp">
+                        <span>NYM: 72%</span>
+                        <span>MIA: 28%</span>
+                    </div>
+                    <div class="wp-bar"><div class="wp-fill" style="width:72%"></div></div>
+                </div>
+                <div class="live-card">
+                    <div class="live-score">
+                        <span>CLE <strong>2</strong></span>
+                        <span><strong>2</strong> DET</span>
+                    </div>
+                    <div class="live-inning">Top 6 • 2 Out • Bases Empty</div>
+                    <div class="live-wp">
+                        <span>CLE: 47%</span>
+                        <span>DET: 53%</span>
+                    </div>
+                    <div class="wp-bar"><div class="wp-fill" style="width:47%"></div></div>
+                </div>
+                <div class="live-card">
+                    <div class="live-score">
+                        <span>SEA <strong>1</strong></span>
+                        <span><strong>5</strong> SD</span>
+                    </div>
+                    <div class="live-inning">Bot 5 • 0 Out</div>
+                    <div class="live-wp">
+                        <span>SEA: 12%</span>
+                        <span>SD: 88%</span>
+                    </div>
+                    <div class="wp-bar"><div class="wp-fill" style="width:12%"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

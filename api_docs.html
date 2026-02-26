@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Predictor API — Documentation</title>
+    <style>
+        :root { --bg: #0f172a; --surface: #1e293b; --border: #334155;
+                --primary: #3b82f6; --success: #10b981; --text: #f1f5f9; --muted: #94a3b8; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Fira Code', monospace;
+               background: var(--bg); color: var(--text); line-height: 1.6; }
+
+        .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { background: var(--surface); border-right: 1px solid var(--border);
+                   padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        .sidebar-title { padding: 0 20px 20px; font-size: 18px; font-weight: 800; color: var(--primary); }
+        .sidebar-section { padding: 8px 20px; font-size: 11px; text-transform: uppercase;
+                          color: var(--muted); letter-spacing: 1px; margin-top: 16px; }
+        .sidebar a { display: block; padding: 6px 20px; color: var(--muted); text-decoration: none;
+                    font-size: 13px; transition: all 0.15s; border-left: 2px solid transparent; }
+        .sidebar a:hover, .sidebar a.active { color: var(--text); background: rgba(59,130,246,0.05);
+                                              border-left-color: var(--primary); }
+
+        /* Main content */
+        .main { padding: 40px; max-width: 900px; }
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+        h2 { font-size: 22px; margin: 40px 0 16px; padding-top: 20px; border-top: 1px solid var(--border); }
+        h3 { font-size: 16px; margin: 24px 0 8px; color: var(--primary); }
+        p { color: var(--muted); margin-bottom: 12px; }
+
+        .endpoint { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+                   margin: 16px 0; overflow: hidden; }
+        .endpoint-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+                          border-bottom: 1px solid var(--border); }
+        .method { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+        .method.get { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+        .method.post { background: rgba(59,130,246,0.15); color: #93c5fd; }
+        .endpoint-path { font-family: 'Fira Code', monospace; font-size: 14px; }
+        .endpoint-desc { font-size: 13px; color: var(--muted); margin-left: auto; }
+        .endpoint-body { padding: 16px; }
+
+        code { background: rgba(59,130,246,0.1); color: var(--primary); padding: 1px 4px;
+               border-radius: 3px; font-size: 13px; font-family: 'Fira Code', monospace; }
+        pre { background: #0d1117; border: 1px solid var(--border); border-radius: 6px;
+              padding: 16px; overflow-x: auto; font-size: 13px; margin: 12px 0; }
+        pre code { background: none; color: var(--text); padding: 0; }
+
+        .param-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        .param-table th { text-align: left; padding: 6px 12px; font-size: 11px;
+                         text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+        .param-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+        .param-table .type { color: var(--primary); font-family: monospace; font-size: 12px; }
+        .param-table .required { color: #ef4444; font-size: 11px; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-free { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+        .badge-pro { background: rgba(59,130,246,0.15); color: #93c5fd; }
+        .badge-premium { background: rgba(168,85,247,0.15); color: #c4b5fd; }
+
+        .rate-limit { background: var(--surface); padding: 12px 16px; border-radius: 6px;
+                     font-size: 13px; display: flex; gap: 24px; margin: 12px 0; }
+
+        @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <nav class="sidebar">
+            <div class="sidebar-title">⚾ MLB Predictor API</div>
+            <div class="sidebar-section">Getting Started</div>
+            <a href="#auth">Authentication</a>
+            <a href="#rate-limits">Rate Limits</a>
+            <a href="#errors">Error Handling</a>
+
+            <div class="sidebar-section">Predictions</div>
+            <a href="#daily-picks">Daily Picks</a>
+            <a href="#predict-game">Predict Game</a>
+            <a href="#live-games">Live Games</a>
+
+            <div class="sidebar-section">Live Data</div>
+            <a href="#schedule">Today's Schedule</a>
+            <a href="#game-state">Game State</a>
+            <a href="#injuries">Injuries</a>
+
+            <div class="sidebar-section">Analytics</div>
+            <a href="#performance">Performance</a>
+            <a href="#correlations">Correlations</a>
+            <a href="#stadiums">Stadium Factors</a>
+
+            <div class="sidebar-section">Tools</div>
+            <a href="#parlays">Parlay Builder</a>
+            <a href="#bankroll">Bankroll Calculator</a>
+        </nav>
+
+        <main class="main">
+            <h1>MLB Predictor API</h1>
+            <p>AI-powered MLB game predictions with live odds, performance tracking, and bankroll management.</p>
+            <p>Base URL: <code>https://api.mlbpredictor.com/api/v1</code></p>
+
+            <div class="rate-limit">
+                <span><span class="badge badge-free">Free</span> 100 req/day</span>
+                <span><span class="badge badge-pro">Pro $29/mo</span> 5,000 req/day</span>
+                <span><span class="badge badge-premium">Premium $99/mo</span> 50,000 req/day</span>
+            </div>
+
+            <h2 id="auth">Authentication</h2>
+            <p>Include your API key in the <code>X-API-Key</code> header with every request.</p>
+            <pre><code>curl -H "X-API-Key: your_api_key_here" \
+  https://api.mlbpredictor.com/api/v1/picks/today</code></pre>
+
+            <h2 id="daily-picks">Daily Picks</h2>
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/picks/today</span>
+                    <span class="endpoint-desc">Get today's AI-generated picks</span>
+                </div>
+                <div class="endpoint-body">
+                    <h3>Parameters</h3>
+                    <table class="param-table">
+                        <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+                        <tr><td>format</td><td class="type">string</td><td>Response format: <code>json</code>, <code>telegram</code>, <code>csv</code></td></tr>
+                        <tr><td>confidence</td><td class="type">string</td><td>Filter: <code>HIGH</code>, <code>MEDIUM</code>, <code>LOW</code></td></tr>
+                        <tr><td>type</td><td class="type">string</td><td>Filter: <code>moneyline</code>, <code>spread</code>, <code>total</code>, <code>F5</code></td></tr>
+                    </table>
+                    <h3>Response</h3>
+                    <pre><code>{
+  "date": "February 24, 2026",
+  "total_picks": 4,
+  "record": "42-28 (+14.2u)",
+  "roi": 11.8,
+  "picks": [
+    {
+      "game_id": 746123,
+      "away_team": "NYY",
+      "home_team": "BOS",
+      "pick_type": "moneyline",
+      "pick_team": "NYY",
+      "odds": -125,
+      "model_probability": 0.58,
+      "edge": 0.024,
+      "confidence": "MEDIUM",
+      "recommended_units": 1.5,
+      "reasoning": "Yankees bats hot vs LHP..."
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+
+            <h2 id="live-games">Live Games</h2>
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/live/game/{game_id}</span>
+                    <span class="endpoint-desc">Real-time game state with win probability</span>
+                </div>
+                <div class="endpoint-body">
+                    <pre><code>{
+  "game_id": 746123,
+  "status": "In Progress",
+  "inning": 7,
+  "half": "bottom",
+  "home_score": 4,
+  "away_score": 3,
+  "home_win_probability": 0.72,
+  "leverage_index": 2.1,
+  "current_pitcher": "Gerrit Cole",
+  "current_batter": "Rafael Devers"
+}</code></pre>
+                </div>
+            </div>
+
+            <h2 id="performance">Performance Tracking</h2>
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-path">/performance</span>
+                    <span class="endpoint-desc">Model performance stats: ROI, win rate, CLV</span>
+                </div>
+                <div class="endpoint-body">
+                    <table class="param-table">
+                        <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+                        <tr><td>period</td><td class="type">string</td><td><code>all</code>, <code>last_7</code>, <code>last_30</code>, <code>2026-02</code></td></tr>
+                        <tr><td>bet_type</td><td class="type">string</td><td>Filter by type</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <h2 id="correlations">Correlation Analysis</h2>
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-path">/correlations/analyze</span>
+                    <span class="endpoint-desc">Analyze parlay leg correlations</span>
+                </div>
+                <div class="endpoint-body">
+                    <pre><code>// Request
+POST /api/v1/correlations/analyze
+{
+  "picks": [
+    {"game_id": 746123, "pick_type": "moneyline", "pick_team": "NYY"},
+    {"game_id": 746123, "pick_type": "total", "pick_side": "Over"}
+  ]
+}
+
+// Response
+{
+  "avg_correlation": 0.35,
+  "parlay_recommendation": "✅ STRONG PARLAY: Avg correlation 0.35",
+  "optimal_combinations": [...]
+}</code></pre>
+                </div>
+            </div>
+
+            <h2 id="errors">Error Handling</h2>
+            <pre><code>// 401 Unauthorized
+{ "error": "Invalid API key" }
+
+// 429 Too Many Requests
+{ "error": "Rate limit exceeded", "retry_after": 60 }
+
+// 500 Server Error
+{ "error": "Internal server error", "request_id": "abc123" }</code></pre>
+
+            <h2 id="webhooks">Webhooks</h2>
+            <p>Subscribe to real-time events: new picks, line movements, game results.</p>
+            <pre><code>POST /api/v1/webhooks/subscribe
+{
+  "url": "https://yourapp.com/webhook",
+  "events": ["new_picks", "line_movement", "game_result", "high_leverage"]
+}</code></pre>
+        </main>
+    </div>
+</body>
+</html>

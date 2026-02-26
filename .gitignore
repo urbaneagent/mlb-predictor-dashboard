@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.parquet
+*.pkl
+.DS_Store
+public_api.log
+statcast_*.parquet
